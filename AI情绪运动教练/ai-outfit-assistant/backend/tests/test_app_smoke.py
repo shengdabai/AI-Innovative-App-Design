@@ -41,3 +41,14 @@ def test_password_hash_round_trip():
     hashed = security.get_password_hash("correct horse")
     assert security.verify_password("correct horse", hashed)
     assert not security.verify_password("wrong", hashed)
+
+
+def test_access_token_round_trip():
+    import jwt
+    from app.core.config import settings
+
+    token = security.create_access_token(42)
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
+    assert payload["sub"] == "42"
+    response = client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}x"})
+    assert response.status_code == 401
