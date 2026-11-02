@@ -16,4 +16,4 @@ rembg
 passlib[bcrypt]==1.7.4
 # passlib 1.7.4 cannot hash with bcrypt 5 (its self-test raises ValueError)
 bcrypt==4.3.0
-python-jose[cryptography]==3.4.0
+PyJWT==2.15.1
