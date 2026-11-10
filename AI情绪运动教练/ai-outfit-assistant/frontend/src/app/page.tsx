@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Camera, Link as LinkIcon, ShoppingBag, Clock, Sparkles, User, Settings, Share2, MoreHorizontal, ChevronLeft } from "lucide-react";
 
 export default function Home() {

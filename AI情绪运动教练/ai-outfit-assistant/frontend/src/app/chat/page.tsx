@@ -16,7 +16,7 @@ type Message = {
     role: "user" | "assistant";
     content: string;
     type: "text" | "image" | "product_card";
-    metadata?: any;
+    metadata?: unknown;
     timestamp: Date;
 };
 
