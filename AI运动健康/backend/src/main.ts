@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { configureTrustProxy } from './common/configure-trust-proxy';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -15,6 +16,7 @@ async function bootstrap() {
   app.set('query parser', 'extended');
 
   const configService = app.get(ConfigService);
+  configureTrustProxy(app, configService.get<string>('TRUST_PROXY'));
 
   // 全局前缀
   const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
