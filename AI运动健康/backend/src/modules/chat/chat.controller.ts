@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
+import { SendMessageDto } from './dto/send-message.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 
@@ -25,9 +26,9 @@ export class ChatController {
   @ApiOperation({ summary: '发送消息' })
   async sendMessage(
     @CurrentUser('id') userId: string,
-    @Body('message') message: string,
+    @Body() dto: SendMessageDto,
   ) {
-    return this.chatService.chat(userId, message);
+    return this.chatService.chat(userId, dto.message);
   }
 
   @Get('history')

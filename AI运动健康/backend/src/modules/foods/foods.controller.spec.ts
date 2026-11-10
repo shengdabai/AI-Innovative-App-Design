@@ -13,6 +13,7 @@ describe('FoodsController request parameters', () => {
   const foodsService = {
     searchFoods: jest.fn(async () => ({ items: [], total: 0 })),
     getFood: jest.fn(async (id: string) => ({ id })),
+    createFood: jest.fn(async () => ({ id: 'food-1' })),
   };
 
   beforeAll(async () => {
@@ -26,6 +27,21 @@ describe('FoodsController request parameters', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
+  const validFood = { name: 'Rice', category: 'grain', calories: 130, protein: 2.6, carbs: 28, fat: 0.3 };
+
+  it('accepts a valid food contribution', async () => {
+    await request(app.getHttpServer()).post('/foods/create').send(validFood).expect(201);
+    expect(foodsService.createFood).toHaveBeenCalledWith(validFood);
+  });
+
+  it.each([{}, { id: 'chosen-id' }, { createdAt: '2000-01-01' }, { calories: -1 }, { tags: [{}] }])(
+    'rejects invalid or protected food fields before reaching Prisma', async (extra) => {
+      const body = Object.keys(extra).length ? { ...validFood, ...extra } : {};
+      await request(app.getHttpServer()).post('/foods/create').send(body).expect(400);
+      expect(foodsService.createFood).not.toHaveBeenCalled();
+    },
+  );
 
   it('GET /foods/search uses page 1 and limit 20 when both are omitted', async () => {
     await request(app.getHttpServer()).get('/foods/search?q=egg').expect(200);

@@ -17,6 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { DietService } from './diet.service';
 import { CreateMealRecordDto } from './dto/create-meal-record.dto';
+import { UpdateMealRecordDto } from './dto/update-meal-record.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { UserInfo } from '../../common/decorators/user.decorator';
@@ -72,7 +73,7 @@ export class DietController {
   async updateMealRecord(
     @CurrentUser('id') userId: string,
     @Param('id') id: string,
-    @Body() dto: Partial<CreateMealRecordDto>,
+    @Body() dto: UpdateMealRecordDto,
   ) {
     return this.dietService.updateMealRecord(userId, id, dto);
   }

@@ -13,6 +13,7 @@ describe('DietController query parameters', () => {
   const dietService = {
     getMealRecords: jest.fn(async () => ({ records: [], total: 0 })),
     getDietTrends: jest.fn(async () => []),
+    updateMealRecord: jest.fn(async () => ({ id: 'meal-1' })),
   };
 
   beforeAll(async () => {
@@ -25,6 +26,24 @@ describe('DietController query parameters', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it.each(['userId', 'id', 'user', 'totalCalories'])('rejects the protected update field %s', async (field) => {
+    await request(app.getHttpServer()).put('/diet/meals/meal-1')
+      .send({ notes: 'Lunch', [field]: 'attacker-controlled' }).expect(400);
+    expect(dietService.updateMealRecord).not.toHaveBeenCalled();
+  });
+
+  it('accepts a partial update without requiring mealType', async () => {
+    await request(app.getHttpServer()).put('/diet/meals/meal-1')
+      .send({ notes: 'Lunch' }).expect(200);
+    expect(dietService.updateMealRecord).toHaveBeenCalledWith(TEST_USER_ID, 'meal-1', { notes: 'Lunch' });
+  });
+
+  it('validates provided update fields', async () => {
+    await request(app.getHttpServer()).put('/diet/meals/meal-1')
+      .send({ mealType: 'INVALID' }).expect(400);
+    expect(dietService.updateMealRecord).not.toHaveBeenCalled();
   });
 
   it('GET /diet/meals uses page 1 and limit 20 when both are omitted', async () => {
