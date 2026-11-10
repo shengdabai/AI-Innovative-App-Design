@@ -10,7 +10,10 @@ import { createControllerTestApp, TEST_USER_ID } from '../../common/testing/cont
 
 describe('ChatController query parameters', () => {
   let app: INestApplication;
-  const chatService = { getChatHistory: jest.fn(async () => []) };
+  const chatService = {
+    getChatHistory: jest.fn(async () => []),
+    chat: jest.fn(async () => ({ message: 'OK' })),
+  };
 
   beforeAll(async () => {
     app = await createControllerTestApp(ChatController, [{ provide: ChatService, useValue: chatService }]);
@@ -22,6 +25,18 @@ describe('ChatController query parameters', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it.each([{}, { message: '' }, { message: '   ' }, { message: {} }, { message: 123 }, { message: false }, { message: [] }, { message: 'x'.repeat(4001) }])(
+    'rejects invalid chat input before calling the service', async (body) => {
+      await request(app.getHttpServer()).post('/chat/send').send(body).expect(400);
+      expect(chatService.chat).not.toHaveBeenCalled();
+    },
+  );
+
+  it('passes a valid message and authenticated user to the service', async () => {
+    await request(app.getHttpServer()).post('/chat/send').send({ message: 'Hello' }).expect(201);
+    expect(chatService.chat).toHaveBeenCalledWith(TEST_USER_ID, 'Hello');
   });
 
   it('GET /chat/history uses limit 50 when limit is omitted', async () => {

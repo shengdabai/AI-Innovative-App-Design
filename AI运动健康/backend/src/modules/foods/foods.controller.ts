@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FoodsService } from './foods.service';
+import { CreateFoodDto } from './dto/create-food.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { JwtOptionalGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -46,7 +47,7 @@ export class FoodsController {
   @Post('create')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '添加新食物（用户贡献）' })
-  async createFood(@Body() foodData: any) {
+  async createFood(@Body() foodData: CreateFoodDto) {
     return this.foodsService.createFood(foodData);
   }
 }
