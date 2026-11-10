@@ -1,6 +1,8 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import KeyvRedis from '@keyv/redis';
 import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
@@ -35,5 +37,10 @@ describe('AppModule wiring', () => {
     const cache = moduleRef.get(CACHE_MANAGER);
     expect(cache.stores).toHaveLength(1);
     expect(cache.stores[0].opts.store).toBeInstanceOf(KeyvRedis);
+  });
+
+  it('enforces the configured rate limit with a global ThrottlerGuard', () => {
+    const providers: unknown[] = Reflect.getMetadata('providers', AppModule) ?? [];
+    expect(providers).toContainEqual({ provide: APP_GUARD, useClass: ThrottlerGuard });
   });
 });
