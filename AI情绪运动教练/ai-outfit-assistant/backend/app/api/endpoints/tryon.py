@@ -15,7 +15,7 @@ async def create_tryon_task(
     """
     Submit a virtual try-on task.
     """
-    return await aigc_service.create_tryon_task(request)
+    return await aigc_service.create_tryon_task(request, current_user.user_id)
 
 @router.get("/task/{task_id}", response_model=schemas.TryOnStatus)
 async def get_tryon_status(
@@ -25,4 +25,4 @@ async def get_tryon_status(
     """
     Check the status of a try-on task.
     """
-    return await aigc_service.get_task_status(task_id)
+    return await aigc_service.get_task_status(task_id, current_user.user_id)

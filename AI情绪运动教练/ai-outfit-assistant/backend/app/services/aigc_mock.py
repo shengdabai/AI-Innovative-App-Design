@@ -6,7 +6,7 @@ from app.schemas.tryon import TryOnResponse, TryOnStatus, TryOnRequest
 _MOCK_TASKS = {}
 
 class MockAIGCService:
-    async def create_tryon_task(self, request: TryOnRequest) -> TryOnResponse:
+    async def create_tryon_task(self, request: TryOnRequest, user_id: int) -> TryOnResponse:
         task_id = str(uuid.uuid4())
         
         # Simulate processing time based on quality
@@ -17,6 +17,7 @@ class MockAIGCService:
             est_time = 10.0
             
         task_info = {
+            "user_id": user_id,
             "task_id": task_id,
             "status": "processing",
             "progress": 0,
@@ -36,9 +37,10 @@ class MockAIGCService:
             estimated_time=est_time
         )
 
-    async def get_task_status(self, task_id: str) -> TryOnStatus:
+    async def get_task_status(self, task_id: str, user_id: int) -> TryOnStatus:
         task = _MOCK_TASKS.get(task_id)
-        if not task:
+        # Match a missing task so callers cannot discover another user's task.
+        if not task or task["user_id"] != user_id:
             return TryOnStatus(task_id=task_id, status="not_found", progress=0)
         
         return TryOnStatus(
