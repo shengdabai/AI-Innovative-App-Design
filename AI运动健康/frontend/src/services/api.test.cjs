@@ -52,7 +52,7 @@ test('a refreshed request returns the same data shape as an ordinary request', a
   expect(tokens.get('refreshToken')).toBe('new-refresh');
 });
 
-test('a repeated 401 refreshes only once and clears rejected credentials', async () => {
+test('a repeated 401 refreshes only once and keeps the refreshed credentials', async () => {
   const { client, tokens } = setup();
   let attempts = 0;
   client.defaults.adapter = (config) => {
@@ -65,5 +65,46 @@ test('a repeated 401 refreshes only once and clears rejected credentials', async
   await expect(client.get('/records')).rejects.toThrow('Unauthorized');
   expect(attempts).toBe(2);
   expect(refresh).toHaveBeenCalledTimes(1);
-  expect(tokens.size).toBe(0);
+  expect(tokens.get('accessToken')).toBe('new-access');
+  expect(tokens.get('refreshToken')).toBe('refresh');
+});
+
+test.each([429, 500, 'network'])('retry failure %s preserves tokens and returns the actual error', async (status) => {
+  const { client, tokens } = setup();
+  let attempts = 0;
+  const retryError = new axios.AxiosError('Retry failed', 'ERR_NETWORK', {}, null,
+    status === 'network' ? undefined : { status, headers: {}, data: {} });
+  client.defaults.adapter = (config) => {
+    if (++attempts === 1) return unauthorized(config);
+    return Promise.reject(retryError);
+  };
+  const refresh = jest.spyOn(axios, 'post').mockResolvedValue({
+    data: { accessToken: 'new-access', refreshToken: 'new-refresh' },
+  });
+  await expect(client.get('/records')).rejects.toBe(retryError);
+  expect(attempts).toBe(2);
+  expect(refresh).toHaveBeenCalledTimes(1);
+  expect(tokens.get('accessToken')).toBe('new-access');
+  expect(tokens.get('refreshToken')).toBe('new-refresh');
+});
+
+test.each([401, 403, 429, 500, 'network'])('refresh failure %s clears tokens only for auth errors', async (status) => {
+  const { client, tokens } = setup();
+  let attempts = 0;
+  client.defaults.adapter = (config) => {
+    attempts += 1;
+    return unauthorized(config);
+  };
+  const refreshError = new axios.AxiosError('Refresh failed', 'ERR_NETWORK', {}, null,
+    status === 'network' ? undefined : { status, headers: {}, data: {} });
+  const refresh = jest.spyOn(axios, 'post').mockRejectedValue(refreshError);
+  await expect(client.get('/records')).rejects.toBe(refreshError);
+  expect(attempts).toBe(1);
+  expect(refresh).toHaveBeenCalledTimes(1);
+  if (status === 401 || status === 403) {
+    expect(tokens.size).toBe(0);
+  } else {
+    expect(tokens.get('accessToken')).toBe('old-access');
+    expect(tokens.get('refreshToken')).toBe('refresh');
+  }
 });

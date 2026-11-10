@@ -44,27 +44,31 @@ class ApiClient {
           // 尝试刷新token
           const refreshToken = await SecureStore.getItemAsync('refreshToken');
           if (refreshToken) {
+            let response;
             try {
-              const response = await axios.post(
+              response = await axios.post(
                 `${API_BASE_URL}/auth/refresh`,
                 { refreshToken },
                 { timeout: 30000 }
               );
-              const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-              await SecureStore.setItemAsync('accessToken', accessToken);
-              if (newRefreshToken) {
-                await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+            } catch (refreshError) {
+              // Only an authentication rejection from refresh invalidates tokens.
+              if (axios.isAxiosError(refreshError) &&
+                  (refreshError.response?.status === 401 || refreshError.response?.status === 403)) {
+                await SecureStore.deleteItemAsync('accessToken');
+                await SecureStore.deleteItemAsync('refreshToken');
               }
-
-              // 重试原请求
-              error.config.headers.Authorization = `Bearer ${accessToken}`;
-              return await this.client.request(error.config);
-            } catch {
-              // 刷新失败，清除token
-              await SecureStore.deleteItemAsync('accessToken');
-              await SecureStore.deleteItemAsync('refreshToken');
+              return Promise.reject(refreshError);
             }
+            const { accessToken, refreshToken: newRefreshToken } = response.data;
+            await SecureStore.setItemAsync('accessToken', accessToken);
+            if (newRefreshToken) {
+              await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+            }
+
+            // Keep retry errors outside refresh handling; _retry bounds this to one attempt.
+            error.config.headers.Authorization = `Bearer ${accessToken}`;
+            return this.client.request(error.config);
           }
         }
         return Promise.reject(error);
