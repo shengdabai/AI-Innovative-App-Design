@@ -49,5 +49,10 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # Validate against the bundledNativeModules.json of the locked expo package.
+      # Online mode compares with Expo's live version API, so every new SDK patch
+      # release turns main red without any change in this repo.
       - name: Check Expo SDK dependency versions
+        env:
+          EXPO_OFFLINE: '1'
         run: npx expo install --check
